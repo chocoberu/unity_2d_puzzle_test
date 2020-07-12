@@ -9,7 +9,7 @@ public class Define
         Red,
         Green,
         Blue,
-
+        Size
     }
     public enum SuperBlock
     {
@@ -30,5 +30,10 @@ public class Define
         Click,
         Drag,
 
+    }
+    public enum State
+    {
+        Idle,
+        CatchBlock,
     }
 }

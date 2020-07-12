@@ -10,13 +10,11 @@ public class InputManager
     public Action<Define.MouseEvent> MouseAction = null;
     public Action<Define.TouchEvent> TouchAction = null;
 
-    bool _pressed = false;
-    float _pressedTime = 0.0f;
+    //bool _pressed = false;
+    //float _pressedTime = 0.0f;
 
     public void OnUpdate()
     {
-        if (EventSystem.current.IsPointerOverGameObject())
-            return;
         if (Input.anyKey && KeyAction != null)
             KeyAction.Invoke();
         if(MouseAction != null)
