@@ -18,7 +18,7 @@ public class Block : MonoBehaviour
     }
     private void Update()
     {
-        switch (blockColor)
+        switch (BlockColor)
         {
             case Define.Block.Red:
                 spriteRenderer.color = Color.red;
