@@ -6,9 +6,17 @@ public class BoardCtrl : MonoBehaviour
 {
     public const int MaxY = 13;
 
+    
     public Block[,] blockBoard = new Block[MaxY + 1, 3];
     public Vector3[,] boardPos = new Vector3[MaxY + 1, 3];
-    public GameObject block;
+    public GameObject blockPrefab;
+
+    public Dictionary<Define.Block, Stack<Block>> pool = new Dictionary<Define.Block, Stack<Block>>();
+
+    //
+    public JobSerializer jobSerializer = new JobSerializer();
+
+    public bool IsWorking { get; set; } = false;
 
     int[] columnMaxValue = new int[3] { -1, -1, -1 };
     
@@ -20,6 +28,7 @@ public class BoardCtrl : MonoBehaviour
 
     float firstY = 9.0f;
 
+    Coroutine coUpdateBoard;
     
     // Start is called before the first frame update
     void Start()
@@ -31,6 +40,19 @@ public class BoardCtrl : MonoBehaviour
                 boardPos[i, j] = new Vector3(4 * j - 4.0f, firstY - i * 1.5f, 0.0f);
             }
         }
+        for(int i = 0; i < (int)Define.Block.Size; i++)
+        {
+            Stack<Block> stack = new Stack<Block>();
+            for(int j = 0; j < 50; j++)
+            {
+                GameObject go = Instantiate(blockPrefab);
+                Block block = go.GetComponent<Block>();
+                block.SetBlockColor(i);
+                go.SetActive(false);
+                stack.Push(block);
+            }
+            pool.Add((Define.Block)i, stack);
+        }
         for(int i = 0; i <5; i++)
         {
             for(int j = 0; j < 3; j++)
@@ -39,7 +61,7 @@ public class BoardCtrl : MonoBehaviour
                 columnMaxValue[j] = i;
             }
         }
-        
+        coUpdateBoard = StartCoroutine(UpdateBoard());
     }
     
     // index 열에 같은 블록이 3개 연속으로 나열했는지 체크
@@ -54,6 +76,10 @@ public class BoardCtrl : MonoBehaviour
 
         for(int i = 1; i < 3; i++)
         {
+            if(blockBoard[start - i, index] == null)
+            {
+                Debug.Log("ERROR!");
+            }
             if (blockBoard[start - i, index].blockColor == color)
                 conti++;
             else
@@ -67,11 +93,17 @@ public class BoardCtrl : MonoBehaviour
     public void AddBlock(int row, int index, bool Start = false)
     {
         // 블록 게임 오브젝트 생성 및 초기화
-        GameObject go = Instantiate(block, boardPos[row, index], Quaternion.identity);
-        blockBoard[row, index] = go.GetComponent<Block>();
+        //GameObject go = Instantiate(block, boardPos[row, index], Quaternion.identity);
+        int randIndex = Random.Range(0, (int)Define.Block.Size);
+        Stack<Block> stack;
+        pool.TryGetValue((Define.Block)randIndex, out stack);
+        Block block = stack.Pop();
+
+        blockBoard[row, index] = block;
         blockBoard[row, index].transform.parent = this.transform;
-        int blockColor = Random.Range(0, (int)Define.Block.Size);
-        blockBoard[row, index].GetComponent<Block>().SetBlockColor(blockColor);
+        blockBoard[row, index].transform.position = boardPos[row, index];
+        //int blockColor = Random.Range(0, (int)Define.Block.Size);
+        //blockBoard[row, index].GetComponent<Block>().SetBlockColor(blockColor);
         blockBoard[row, index].gameObject.SetActive(false);
 
         // 처음 보드를 초기화 할 때 옵션
@@ -118,7 +150,11 @@ public class BoardCtrl : MonoBehaviour
         int start = GetColumnBlockCount(index);
         for(int i = 0; i < 3; i++)
         {
-            Destroy(blockBoard[start - i, index].gameObject);
+            //Destroy(blockBoard[start - i, index].gameObject);
+            blockBoard[start - i, index].gameObject.SetActive(false);
+            Stack<Block> stack;
+            pool.TryGetValue(blockBoard[start - i, index].blockColor, out stack);
+            stack.Push(blockBoard[start - i, index]);
             blockBoard[start - i, index] = null;
             columnMaxValue[index]--;
         }
@@ -126,7 +162,8 @@ public class BoardCtrl : MonoBehaviour
 
     public void AddRow()
     {
-        for(int j = 0; j < 3; j++)
+        IsWorking = true;
+        for (int j = 0; j < 3; j++)
         {
             if(GetColumnBlockCount(j) == 12)
             {
@@ -140,7 +177,12 @@ public class BoardCtrl : MonoBehaviour
             // 1. 기존 블록 위치 이동
             for (int i = GetColumnBlockCount(j); i >= 0; i--)
             {
-                blockBoard[i + 1, j] = blockBoard[i, j];
+                if(blockBoard[i,j] == null)
+                {
+                    Debug.Log($"({i}, {j}) is null");
+                    continue;
+                }
+                blockBoard[i + 1, j] = blockBoard[i, j]; 
                 blockBoard[i + 1, j].transform.position = boardPos[i + 1, j];
                 blockBoard[i, j] = null;
             }
@@ -149,7 +191,22 @@ public class BoardCtrl : MonoBehaviour
             // 2. 블록 추가
             AddBlock(0, j);
         }
+        IsWorking = false;
     }
 
-    
+    public void PickDownBlock(int index)
+    {
+
+    }
+
+    IEnumerator UpdateBoard()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(5.0f);
+            //AddRow();
+            jobSerializer.Push(AddRow);
+            Debug.Log("AddRow jobSerializer push");
+        }
+    }
 }

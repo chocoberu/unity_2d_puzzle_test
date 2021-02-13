@@ -58,14 +58,14 @@ public class PlayerCtrl : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Space) && !bInput)
         {
-            bool result;
+            //bool result;
             if (!bPick)
-                result = PickUpBlock();
+                board.jobSerializer.Push(PickUpBlock);
             else
-                result = PickDownBlock();
+                board.jobSerializer.Push(PickDownBlock);
 
-            if (!result)
-                Debug.Log("Game Over!");
+            //if (!result)
+            //Debug.Log("Game Over!");
             bInput = true;
         }
         if (!Input.anyKeyDown)
@@ -81,75 +81,66 @@ public class PlayerCtrl : MonoBehaviour
     }
     
     // 블록을 Pick up
-    bool PickUpBlock()
+    void PickUpBlock()
     {
         if (board.GetColumnBlockCount(PlayerIndex.x) < 0)
-            return true;
+            return;
         
+        // TODO : 특수 블럭 처리 추가
         spriteRenderer.color = Color.black;
-        pickBlock = board.blockBoard[PlayerIndex.y, PlayerIndex.x];
         PickBlockIndex = PlayerIndex;
         bPick = true;
 
-        return true;
+
+        Debug.Log($"{PickBlockIndex.x} index pick");
+        return;
     }
-    bool PickDownBlock()
+    void PickDownBlock()
     {
         spriteRenderer.color = Color.white;
-        if(PickBlockIndex == PlayerIndex)
+
+        if (PlayerIndex.x == PickBlockIndex.x)
         {
-            pickBlock = null;
-            PickBlockIndex.x = PickBlockIndex.y = -1;
             bPick = false;
-            return true;
+            return;
         }
+            
+       
+        pickBlock = board.blockBoard[board.GetColumnBlockCount(PickBlockIndex.x), PickBlockIndex.x];
         int dy = board.GetColumnBlockCount(PlayerIndex.x);
-        if (dy < 13 && PlayerIndex.x != PickBlockIndex.x)
+        if (dy + 1 >= 13)
+            return;
+        if (board.blockBoard[dy + 1, PlayerIndex.x] != null)
         {
-            // 블록을 옮길 좌표 계산
-            float posX, posY, posZ;
-            if (dy < 0)
-            {
-                posY = board.boardPos[0, PlayerIndex.x].y;
-                posX = board.boardPos[0, PlayerIndex.x].x;
-                posZ = board.boardPos[0, PlayerIndex.x].z;
-            }
-            else
-            {
-                posY = board.boardPos[dy, PlayerIndex.x].y - 1.5f;
-                posX = board.boardPos[dy, PlayerIndex.x].x;
-                posZ = board.boardPos[dy, PlayerIndex.x].z;
-            }
-            // 잡은 블록을 해당 위치로 옮긴다
-            board.blockBoard[dy + 1, PlayerIndex.x] = pickBlock;
-            board.SetColumnBlockCount(PlayerIndex.x, 1);
-            pickBlock.transform.position = new Vector3(posX, posY, posZ);
+            Debug.Log("ERROR!");
+            return;
+        }
 
-            board.blockBoard[PickBlockIndex.y, PickBlockIndex.x] = null; // 이전 블록 위치에 null로
+        board.blockBoard[dy + 1, PlayerIndex.x] = pickBlock;
+        board.blockBoard[board.GetColumnBlockCount(PickBlockIndex.x), PickBlockIndex.x] = null;
+        pickBlock.transform.position = board.boardPos[dy + 1, PlayerIndex.x];
 
-            // 블록 체크
-            if (board.CheckColumn(PlayerIndex.x))
-            {
-                Debug.Log("3 correct, block will remove");
-                board.RemoveBlock(PlayerIndex.x);
+        board.SetColumnBlockCount(PlayerIndex.x, 1);
+        board.SetColumnBlockCount(PickBlockIndex.x, -1);
 
-                PlayerIndex.y = Mathf.Clamp(dy - 2, 0, 21);
-            }
-            else
-            {
-                PlayerIndex.y = dy + 1;
-            }
+        // 블록 체크
+        if (board.CheckColumn(PlayerIndex.x))
+        {
+            Debug.Log("3 correct, block will remove");
+            board.RemoveBlock(PlayerIndex.x);
 
-            board.SetColumnBlockCount(PickBlockIndex.x, -1);
-            // 플레이어 좌표를 현재 좌표로 이동
-            transform.position = board.boardPos[PlayerIndex.y, PlayerIndex.x];
+            PlayerIndex.y = Mathf.Clamp(dy - 2, 0, 21);
         }
         else
-            return false;
+        {
+            PlayerIndex.y = dy + 1;
+        }
+        // 플레이어 좌표를 현재 좌표로 이동
+        transform.position = board.boardPos[PlayerIndex.y, PlayerIndex.x];
 
         pickBlock = null;
         bPick = false;
         PickBlockIndex.x = PickBlockIndex.y = -1;
-        return true;
+        return;
     }
 }
