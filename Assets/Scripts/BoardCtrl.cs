@@ -43,14 +43,7 @@ public class BoardCtrl : MonoBehaviour
         for(int i = 0; i < (int)Define.Block.Size; i++)
         {
             Stack<Block> stack = new Stack<Block>();
-            for(int j = 0; j < 50; j++)
-            {
-                GameObject go = Instantiate(blockPrefab);
-                Block block = go.GetComponent<Block>();
-                block.SetBlockColor(i);
-                go.SetActive(false);
-                stack.Push(block);
-            }
+            CreateBlock(stack, i, 50);
             pool.Add((Define.Block)i, stack);
         }
         for(int i = 0; i <5; i++)
@@ -62,6 +55,19 @@ public class BoardCtrl : MonoBehaviour
             }
         }
         coUpdateBoard = StartCoroutine(UpdateBoard());
+    }
+
+    void CreateBlock(Stack<Block> stack, int blockColor,  int blockCount = 10)
+    {
+        for(int i = 0; i < blockCount; i++)
+        {
+            GameObject go = Instantiate(blockPrefab);
+            Block block = go.GetComponent<Block>();
+            block.SetBlockColor(blockColor);
+            go.SetActive(false);
+            stack.Push(block);
+        }
+        
     }
     
     // index 열에 같은 블록이 3개 연속으로 나열했는지 체크
@@ -97,6 +103,12 @@ public class BoardCtrl : MonoBehaviour
         int randIndex = Random.Range(0, (int)Define.Block.Size);
         Stack<Block> stack;
         pool.TryGetValue((Define.Block)randIndex, out stack);
+
+        if(stack != null && stack.Count == 0)
+        {
+            // stack에 추가 생성
+            CreateBlock(stack, randIndex, 10);
+        }
         Block block = stack.Pop();
 
         blockBoard[row, index] = block;
@@ -192,11 +204,10 @@ public class BoardCtrl : MonoBehaviour
             AddBlock(0, j);
         }
         IsWorking = false;
-    }
 
-    public void PickDownBlock(int index)
-    {
-
+        // TEST CODE
+        foreach (Stack<Block> stack in pool.Values)
+            Debug.Log(stack.Count);
     }
 
     IEnumerator UpdateBoard()

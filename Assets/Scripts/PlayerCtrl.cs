@@ -37,6 +37,10 @@ public class PlayerCtrl : MonoBehaviour
         PlayerIndex.y = 4;
         
     }
+    void Update()
+    {
+        SetPlayerPos();
+    }
 
     void OnKeyboard()
     {
@@ -66,10 +70,12 @@ public class PlayerCtrl : MonoBehaviour
 
             //if (!result)
             //Debug.Log("Game Over!");
-            bInput = true;
+            
         }
+        bInput = true;
         if (!Input.anyKeyDown)
             bInput = false;
+        
     }
     public void SetPlayerPos()
     {
@@ -77,7 +83,7 @@ public class PlayerCtrl : MonoBehaviour
         if (PlayerIndex.y < 0)
             PlayerIndex.y = 0;
         transform.position = board.boardPos[PlayerIndex.y, PlayerIndex.x];
-        bInput = true;
+        
     }
     
     // 블록을 Pick up
