@@ -8,8 +8,10 @@ public class Manager : MonoBehaviour
     static Manager Instance { get { Init(); return _instance; } }
 
     InputManager _input = new InputManager();
+    GameManager _game = new GameManager();
 
     public static InputManager Input { get { return Instance._input; } }
+    public static GameManager Game { get { return Instance._game; } }
 
     static void Init()
     {
@@ -27,6 +29,7 @@ public class Manager : MonoBehaviour
             _instance = obj.GetComponent<Manager>();
 
             // 다른 매니저들 초기화
+            Game.Init();
         }
     }
     public static void Clear()

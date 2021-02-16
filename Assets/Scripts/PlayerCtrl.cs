@@ -135,6 +135,9 @@ public class PlayerCtrl : MonoBehaviour
             Debug.Log("3 correct, block will remove");
             board.RemoveBlock(PlayerIndex.x);
 
+            // 점수 추가
+            Manager.Game.Score += 100;
+            
             PlayerIndex.y = Mathf.Clamp(dy - 2, 0, 21);
         }
         else
