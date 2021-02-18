@@ -6,10 +6,11 @@ public class BoardCtrl : MonoBehaviour
 {
     public const int MaxY = 13;
 
-    
     public Block[,] blockBoard = new Block[MaxY + 1, 3];
     public Vector3[,] boardPos = new Vector3[MaxY + 1, 3];
     public GameObject blockPrefab;
+
+    float[] updateTime = new float[4] { 5.0f, 4.0f, 3.5f, 2.5f };
 
     public Dictionary<Define.Block, Stack<Block>> pool = new Dictionary<Define.Block, Stack<Block>>();
 
@@ -170,6 +171,10 @@ public class BoardCtrl : MonoBehaviour
             blockBoard[start - i, index] = null;
             columnMaxValue[index]--;
         }
+
+        // 점수 추가
+        Manager.Game.AddScore();
+
     }
 
     public void AddRow()
@@ -180,6 +185,8 @@ public class BoardCtrl : MonoBehaviour
             if(GetColumnBlockCount(j) == 12)
             {
                 Debug.Log("Game Over!");
+                StopCoroutine(coUpdateBoard);
+                Manager.Game.EndGame();
                 return;
             }
         }
@@ -205,19 +212,17 @@ public class BoardCtrl : MonoBehaviour
         }
         IsWorking = false;
 
-        // TEST CODE
-        foreach (Stack<Block> stack in pool.Values)
-            Debug.Log(stack.Count);
     }
 
     IEnumerator UpdateBoard()
     {
         while (true)
         {
-            yield return new WaitForSeconds(5.0f);
+            yield return new WaitForSeconds(updateTime[Manager.Game.Level - 1]);
             //AddRow();
             jobSerializer.Push(AddRow);
             Debug.Log("AddRow jobSerializer push");
         }
     }
+    
 }
