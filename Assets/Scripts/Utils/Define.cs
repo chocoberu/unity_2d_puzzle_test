@@ -9,6 +9,8 @@ public class Define
         Red,
         Green,
         Blue,
+        Yellow,
+        Cyan,
         Size
     }
     public enum SuperBlock

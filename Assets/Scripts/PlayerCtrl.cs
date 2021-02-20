@@ -21,6 +21,10 @@ public class PlayerCtrl : MonoBehaviour
     {
         Manager.Input.KeyAction -= OnKeyboard;
         Manager.Input.KeyAction += OnKeyboard; // 키보드 등록
+        Manager.Game.gameOverPlayerAction -= SetGameOver;
+        Manager.Game.gameOverPlayerAction += SetGameOver;
+        Manager.Game.restartPlayerAction += Restart;
+
         bInput = false;
         bPick = false;
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -44,7 +48,7 @@ public class PlayerCtrl : MonoBehaviour
 
     void OnKeyboard()
     {
-        // TODO : 키보드에 따른 액션 
+        // 키보드에 따른 액션 
         if (Input.GetKeyDown(KeyCode.LeftArrow) && !bInput)
         {
             PlayerIndex.x = (PlayerIndex.x + 2) % 3;
@@ -93,7 +97,7 @@ public class PlayerCtrl : MonoBehaviour
             return;
         
         // TODO : 특수 블럭 처리 추가
-        spriteRenderer.color = Color.black;
+        spriteRenderer.color = Color.gray;
         PickBlockIndex = PlayerIndex;
         bPick = true;
 
@@ -101,6 +105,7 @@ public class PlayerCtrl : MonoBehaviour
         Debug.Log($"{PickBlockIndex.x} index pick");
         return;
     }
+    // 블록을 내려놓을 때 처리
     void PickDownBlock()
     {
         spriteRenderer.color = Color.white;
@@ -110,12 +115,15 @@ public class PlayerCtrl : MonoBehaviour
             bPick = false;
             return;
         }
-            
        
         pickBlock = board.blockBoard[board.GetColumnBlockCount(PickBlockIndex.x), PickBlockIndex.x];
         int dy = board.GetColumnBlockCount(PlayerIndex.x);
-        if (dy + 1 >= 13)
+        if (dy + 1 >= board.GetMaxY())
+        {
+            Debug.Log("Game Over : 플레이어가 블록을 옮겨서");
+            Manager.Game.EndGame();
             return;
+        }
         if (board.blockBoard[dy + 1, PlayerIndex.x] != null)
         {
             Debug.Log("ERROR!");
@@ -148,5 +156,17 @@ public class PlayerCtrl : MonoBehaviour
         bPick = false;
         PickBlockIndex.x = PickBlockIndex.y = -1;
         return;
+    }
+    void SetGameOver()
+    {
+        Manager.Input.KeyAction -= OnKeyboard;
+        this.gameObject.SetActive(false);
+    }
+    void Restart()
+    {
+        Manager.Input.KeyAction += OnKeyboard;
+        gameObject.SetActive(true);
+        PlayerIndex.x = 1;
+        PlayerIndex.y = 4;
     }
 }

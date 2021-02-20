@@ -29,6 +29,12 @@ public class Block : MonoBehaviour
             case Define.Block.Blue:
                 spriteRenderer.color = Color.blue;
                 break;
+            case Define.Block.Yellow:
+                spriteRenderer.color = Color.yellow;
+                break;
+            case Define.Block.Cyan:
+                spriteRenderer.color = Color.cyan;
+                break;
         }
     }
 

@@ -5,16 +5,19 @@ using UnityEngine;
 public class BoardCtrl : MonoBehaviour
 {
     public const int MaxY = 13;
+    public int GetMaxY() { return MaxY; }
 
     public Block[,] blockBoard = new Block[MaxY + 1, 3];
     public Vector3[,] boardPos = new Vector3[MaxY + 1, 3];
     public GameObject blockPrefab;
+    public GameObject blockRoot;
 
     float[] updateTime = new float[4] { 5.0f, 4.0f, 3.5f, 2.5f };
+    int[] updateBlockKinds = new int[4] { 3, 4, 4, 5 };
 
     public Dictionary<Define.Block, Stack<Block>> pool = new Dictionary<Define.Block, Stack<Block>>();
 
-    //
+    // JobQueue
     public JobSerializer jobSerializer = new JobSerializer();
 
     public bool IsWorking { get; set; } = false;
@@ -27,7 +30,7 @@ public class BoardCtrl : MonoBehaviour
     // 해당 열의 블록 개수를 설정
     public void SetColumnBlockCount(int index, int value ) { columnMaxValue[index] += value; }
 
-    float firstY = 9.0f;
+    const float firstY = 9.0f;
 
     Coroutine coUpdateBoard;
     
@@ -55,10 +58,16 @@ public class BoardCtrl : MonoBehaviour
                 columnMaxValue[j] = i;
             }
         }
+        // 게임 오버시 실행할 함수 설정
+        Manager.Game.gameOverBoardAction -= SetGameOver;
+        Manager.Game.gameOverBoardAction += SetGameOver;
+        Manager.Game.restartBoardAction += Restart;
+
+        // 보드 업데이트 (일정 시간마다 블록 1줄 생성)
         coUpdateBoard = StartCoroutine(UpdateBoard());
     }
 
-    void CreateBlock(Stack<Block> stack, int blockColor,  int blockCount = 10)
+    void CreateBlock(Stack<Block> stack, int blockColor, int blockCount = 10)
     {
         for(int i = 0; i < blockCount; i++)
         {
@@ -66,6 +75,7 @@ public class BoardCtrl : MonoBehaviour
             Block block = go.GetComponent<Block>();
             block.SetBlockColor(blockColor);
             go.SetActive(false);
+            go.transform.parent = blockRoot.transform;
             stack.Push(block);
         }
         
@@ -101,7 +111,8 @@ public class BoardCtrl : MonoBehaviour
     {
         // 블록 게임 오브젝트 생성 및 초기화
         //GameObject go = Instantiate(block, boardPos[row, index], Quaternion.identity);
-        int randIndex = Random.Range(0, (int)Define.Block.Size);
+        //int randIndex = Random.Range(0, (int)Define.Block.Size);
+        int randIndex = Random.Range(0, updateBlockKinds[Manager.Game.Level - 1]);
         Stack<Block> stack;
         pool.TryGetValue((Define.Block)randIndex, out stack);
 
@@ -127,10 +138,10 @@ public class BoardCtrl : MonoBehaviour
                 if (blockBoard[row - 2, index].GetComponent<Block>().BlockColor == blockBoard[row, index].GetComponent<Block>().BlockColor
                         && blockBoard[row - 1, index].GetComponent<Block>().BlockColor == blockBoard[row, index].GetComponent<Block>().BlockColor)
                 {
-                    int color = Random.Range(0, (int)Define.Block.Size);
+                    int color = Random.Range(0, updateBlockKinds[Manager.Game.Level - 1]);
                     while (color == (int)blockBoard[row - 1, index].GetComponent<Block>().BlockColor)
                     {
-                        color = Random.Range(0, (int)Define.Block.Size);
+                        color = Random.Range(0, updateBlockKinds[Manager.Game.Level - 1]);
                     }
                     blockBoard[row, index].GetComponent<Block>().SetBlockColor(color);
                 }
@@ -144,10 +155,10 @@ public class BoardCtrl : MonoBehaviour
                 if (blockBoard[row, index].GetComponent<Block>().BlockColor == blockBoard[row + 1, index].GetComponent<Block>().BlockColor
                     && blockBoard[row + 1, index].GetComponent<Block>().BlockColor == blockBoard[row + 2, index].GetComponent<Block>().BlockColor)
                 {
-                    int color = Random.Range(0, (int)Define.Block.Size);
+                    int color = Random.Range(0, updateBlockKinds[Manager.Game.Level - 1]);
                     while (color == (int)blockBoard[1, index].GetComponent<Block>().BlockColor)
                     {
-                        color = Random.Range(0, (int)Define.Block.Size);
+                        color = Random.Range(0, updateBlockKinds[Manager.Game.Level - 1]);
                     }
                     blockBoard[row, index].GetComponent<Block>().SetBlockColor(color);
                 }
@@ -182,10 +193,9 @@ public class BoardCtrl : MonoBehaviour
         IsWorking = true;
         for (int j = 0; j < 3; j++)
         {
-            if(GetColumnBlockCount(j) == 12)
+            if(GetColumnBlockCount(j) >= 12)
             {
                 Debug.Log("Game Over!");
-                StopCoroutine(coUpdateBoard);
                 Manager.Game.EndGame();
                 return;
             }
@@ -225,4 +235,42 @@ public class BoardCtrl : MonoBehaviour
         }
     }
     
+    void SetGameOver()
+    {
+        StopCoroutine(coUpdateBoard);
+    }
+
+    void Restart()
+    {
+        // 1. 블록 클리어
+        for(int j = 0; j < 3; j++)
+        {
+            int start = GetColumnBlockCount(j);
+            for (int i = 0; i <= start ; i++)
+            {
+                //Destroy(blockBoard[start - i, index].gameObject);
+                blockBoard[start - i, j].gameObject.SetActive(false);
+                
+                Stack<Block> stack;
+                pool.TryGetValue(blockBoard[start - i, j].blockColor, out stack);
+                stack.Push(blockBoard[start - i, j]);
+
+                blockBoard[start - i, j] = null;
+                
+            }
+        }
+
+        // 블록 다시 세팅
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                AddBlock(i, j, Start: true);
+                columnMaxValue[j] = i;
+            }
+        }
+
+        // 보드 업데이트 (일정 시간마다 블록 1줄 생성)
+        coUpdateBoard = StartCoroutine(UpdateBoard());
+    }
 }

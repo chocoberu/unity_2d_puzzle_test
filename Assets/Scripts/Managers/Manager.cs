@@ -30,7 +30,9 @@ public class Manager : MonoBehaviour
 
             // 다른 매니저들 초기화
             Game.Init();
+
         }
+        
     }
     public static void Clear()
     {
